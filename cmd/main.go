@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc"
 	"log"
 	"os"
 	"os/signal"
-	"simple-crud/config"
-	"simple-crud/database"
-	"simple-crud/internal/repository"
-	"simple-crud/internal/server"
-	"simple-crud/internal/service"
+	"simple-grpc-crud/config"
+	"simple-grpc-crud/database"
+	"simple-grpc-crud/internal/gateway"
+	"simple-grpc-crud/internal/repository"
+	"simple-grpc-crud/internal/server"
+	"simple-grpc-crud/internal/service"
 	"syscall"
 )
 
@@ -30,14 +32,23 @@ func main() {
 	}
 	defer db.Close(ctx)
 
-	// Create client repository and service
+	grpcServer := grpc.NewServer()
+	defer grpcServer.GracefulStop()
+
+	srv := server.NewGrpcServer(grpcServer)
+
 	clientRepository := repository.NewClientStorage(db)
 	clientService := service.NewClientService(clientRepository)
 
-	// Create and run server
-	srv := server.NewServer(db, clientService)
 	go func() {
-		if err = srv.Start(cfg); err != nil {
+		if err = srv.Start(cfg, clientService); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	grpcGateway := gateway.NewGrpcGateway(grpcServer)
+	go func() {
+		if err = grpcGateway.Start(ctx, cfg); err != nil {
 			log.Fatal(err)
 		}
 	}()

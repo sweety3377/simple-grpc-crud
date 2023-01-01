@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"simple-crud/config"
+	"simple-grpc-crud/config"
 )
 
 func Connect(ctx context.Context, cfg *config.Config) (*pgx.Conn, error) {
