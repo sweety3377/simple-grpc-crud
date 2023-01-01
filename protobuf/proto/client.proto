@@ -1,0 +1,50 @@
+syntax="proto3";
+
+option go_package="/proto";
+
+package simple_crud_example;
+
+service ClientGreeter {
+  rpc Create (CreateClientRequest) returns (CreateClientResponse);
+  rpc Read (ReadClientRequest) returns (ReadClientResponse);
+  rpc Update (UpdateClientRequest) returns (UpdateClientResponse);
+  rpc Delete (DeleteClientRequest) returns (DeleteClientResponse);
+}
+
+message CreateClientRequest {
+  string id = 1;
+  string name = 2;
+  string surname = 3;
+  string lastname = 4;
+  uint32 age = 5;
+  uint32 weight = 6;
+  uint32 height = 7;
+}
+
+message CreateClientResponse {
+  string id = 1;
+}
+
+message ReadClientRequest {
+  string id = 1;
+}
+
+message ReadClientResponse {
+    CreateClientRequest client = 1;
+}
+
+message UpdateClientRequest {
+  CreateClientRequest client = 1;
+}
+
+message UpdateClientResponse {
+  string id = 1;
+}
+
+message DeleteClientRequest {
+  string id = 1;
+}
+
+message DeleteClientResponse {
+  string id = 1;
+}
