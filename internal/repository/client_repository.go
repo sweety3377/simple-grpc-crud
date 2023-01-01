@@ -1,13 +1,11 @@
 package repository
 
 import (
-	"encoding/json"
+	"context"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/v2/pgxscan"
-	"github.com/go-chi/render"
 	"github.com/jackc/pgx/v5"
-	"net/http"
-	"simple-crud/internal/model"
+	"simple-grpc-crud/protobuf/pb"
 )
 
 type ClientStorage struct {
@@ -18,97 +16,57 @@ func NewClientStorage(db *pgx.Conn) *ClientStorage {
 	return &ClientStorage{db: db}
 }
 
-func (c ClientStorage) Create(w http.ResponseWriter, r *http.Request) {
-	var body model.Client
-	err := json.NewDecoder(r.Body).Decode(&body)
+func (c ClientStorage) Create(ctx context.Context, in *pb.CreateClientRequest) (*pb.CreateClientResponse, error) {
+	sql, args, _ := sq.Insert("clients").Values(in.Id, in.Name, in.Surname, in.Lastname, in.Age, in.Weight, in.Height).ToSql()
+
+	_, err := c.db.Exec(ctx, sql, args...)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		return &pb.CreateClientResponse{}, err
 	}
 
-	sql, args, _ := sq.Insert("clients").
-		Values(body.ID, body.Name, body.Surname, body.Lastname, body.Age, body.Weight, body.Height).
-		ToSql()
-
-	_, err = c.db.Exec(r.Context(), sql, args...)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	resp := model.CreateClientResponse{ID: body.ID}
-
-	render.Status(r, http.StatusCreated)
-	render.Respond(w, r, resp)
+	return &pb.CreateClientResponse{Id: in.Id}, nil
 }
 
-func (c ClientStorage) Read(w http.ResponseWriter, r *http.Request) {
-	var body model.GetClientRequest
-	err := json.NewDecoder(r.Body).Decode(&body)
+func (c ClientStorage) Read(ctx context.Context, in *pb.ReadClientRequest) (*pb.ReadClientResponse, error) {
+	sql, args, _ := sq.Select("*").From("clients").Where(sq.Eq{"id": in.Id}).ToSql()
+
+	var client pb.CreateClientRequest
+	err := pgxscan.Select(ctx, c.db, &client, sql, args...)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		return &pb.ReadClientResponse{}, nil
 	}
 
-	sql, args, _ := sq.Select("*").From("clients").Where(sq.Eq{"id": body.ID}).ToSql()
-
-	var client model.Client
-	err = pgxscan.Select(r.Context(), c.db, &client, sql, args...)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	render.Status(r, http.StatusOK)
-	render.Respond(w, r, client)
+	return &pb.ReadClientResponse{Client: &client}, nil
 }
 
-func (c ClientStorage) Update(w http.ResponseWriter, r *http.Request) {
-	var body model.Client
-	err := json.NewDecoder(r.Body).Decode(&body)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
+func (c ClientStorage) Update(ctx context.Context, in *pb.UpdateClientRequest) (*pb.UpdateClientResponse, error) {
 	sql, args, _ := sq.Update("clients").
-		Set("id", body.ID).
-		Set("name", body.Name).
-		Set("surname", body.Surname).
-		Set("lastname", body.Lastname).
-		Set("age", body.Age).
-		Set("height", body.Height).
-		Set("weight", body.Weight).
+		Set("id", in.Client.Id).
+		Set("name", in.Client.Name).
+		Set("surname", in.Client.Surname).
+		Set("lastname", in.Client.Lastname).
+		Set("age", in.Client.Age).
+		Set("height", in.Client.Height).
+		Set("weight", in.Client.Weight).
 		ToSql()
 
-	_, err = c.db.Exec(r.Context(), sql, args...)
+	_, err := c.db.Exec(ctx, sql, args...)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		return &pb.UpdateClientResponse{}, nil
 	}
 
-	render.Status(r, http.StatusOK)
-	render.Respond(w, r, body)
+	return &pb.UpdateClientResponse{Id: in.Client.Id}, nil
+
 }
 
-func (c ClientStorage) Delete(w http.ResponseWriter, r *http.Request) {
-	var body model.GetClientRequest
-	err := json.NewDecoder(r.Body).Decode(&body)
+func (c ClientStorage) Delete(ctx context.Context, in *pb.DeleteClientRequest) (*pb.DeleteClientResponse, error) {
+	sql, args, _ := sq.Delete("*").From("clients").Where(sq.Eq{"id": in.Id}).ToSql()
+
+	_, err := c.db.Exec(ctx, sql, args...)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		return &pb.DeleteClientResponse{}, nil
 	}
 
-	sql, args, _ := sq.Delete("*").From("clients").Where(sq.Eq{"id": body.ID}).ToSql()
+	return &pb.DeleteClientResponse{Id: in.Id}, nil
 
-	_, err = c.db.Exec(r.Context(), sql, args...)
-	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	resp := model.DeleteClientResponse{ID: body.ID}
-
-	render.Status(r, http.StatusOK)
-	render.Respond(w, r, resp)
 }
