@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   app:
-    image: "simple-crud:1.0"
+    image: "simple-grpc-crud:1.0"
     ports:
       - "8080:8080"
     networks:
