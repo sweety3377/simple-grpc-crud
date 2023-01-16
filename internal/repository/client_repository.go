@@ -48,6 +48,7 @@ func (c ClientStorage) Update(ctx context.Context, in *pb.UpdateClientRequest) (
 		Set("age", in.Client.Age).
 		Set("height", in.Client.Height).
 		Set("weight", in.Client.Weight).
+		Where(sq.Eq{"id": in.Client.Id}).
 		ToSql()
 
 	_, err := c.db.Exec(ctx, sql, args...)
